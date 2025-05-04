@@ -103,11 +103,17 @@ class PostController extends Controller
                 'title'          => 'required|unique:posts,title,' . $post->id,
                 'content'        => 'required',
                 'category_id'    => 'required|exists:categories,id',
-                'user_id'        => 'required',
+
                 'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
             ],
 
         );
+        $updateData = [
+            'title'       => $request->title,
+            'content'     => $request->content,
+            'category_id' => $request->category_id,
+            'user_id'     => auth()->id(), // Get from authenticated user
+        ];
 
         //handle image upload
         $imagePath = null;
@@ -125,17 +131,14 @@ class PostController extends Controller
             $imageName = time() . '_' . $request->file('featured_image')->getClientOriginalName();
             $imagePath = 'uploads/' . $imageName;
 
-            $image->file('featured_image')->move(public_path('uploads'), $imageName);
+            $image->move(public_path('uploads'), $imageName);
 
+            $updateData['featured_image'] = $imagePath;
         }
 
-        $post->update([
-            'title'          => $request->title,
-            'content'        => $request->content,
-            'category_id'    => $request->category_id,
-            'user_id'        => $request->user_id,
-            'featured_image' => $imagePath,
-        ]);
+        $post->update(
+            $updateData
+        );
 
         return redirect()->route('posts.index')->with('success', 'Post updated successfully!');
     }
@@ -156,5 +159,6 @@ class PostController extends Controller
 
         }
         $post->delete();
+        return redirect()->route('posts.index')->with('success', 'Post deleted successfully!');
     }
 }
